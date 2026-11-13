@@ -1,0 +1,32 @@
+# ---- 编译产物 ----
+/TranscodeServer.exe
+/*.pdb
+/*.obj
+/bin/*.exe
+/bin/*.dll
+/bin/*.zip
+/bin/*.7z
+
+# ---- 运行时数据（绝不提交）----
+/work/*
+!/work/.gitkeep
+/output/*
+!/output/.gitkeep
+/inbox/*
+!/inbox/.gitkeep
+/data/jobs.json
+/data/jobs.json.tmp
+/data/logs/
+
+# ---- 本地工具链（例如便携版 Git）----
+/tools/
+PortableGit*/
+
+# ---- 编辑器 / 系统 ----
+.vs/
+.idea/
+*.user
+*.suo
+Thumbs.db
+desktop.ini
+.DS_Store

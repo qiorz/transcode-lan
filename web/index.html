@@ -1,0 +1,1109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>转码工作站 · LAN</title>
+<style>
+:root{
+  --bg:#08090e;
+  --panel:rgba(255,255,255,.035);
+  --panel2:rgba(255,255,255,.055);
+  --line:rgba(255,255,255,.09);
+  --text:#e9ebf5;
+  --muted:#8b90a8;
+  --accent:#7c5cff;
+  --accent2:#22d3ee;
+  --ok:#34d399;
+  --warn:#fbbf24;
+  --err:#fb7185;
+  --radius:16px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:"Segoe UI Variable Display","Segoe UI","PingFang SC","Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
+  background:
+    radial-gradient(900px 600px at 12% -10%, rgba(124,92,255,.20), transparent 60%),
+    radial-gradient(800px 520px at 95% 0%, rgba(34,211,238,.14), transparent 55%),
+    radial-gradient(700px 700px at 60% 110%, rgba(124,92,255,.10), transparent 60%),
+    var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit}
+button{font:inherit;color:inherit;cursor:pointer}
+::selection{background:rgba(124,92,255,.4)}
+
+/* ---------- top bar ---------- */
+.top{
+  position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  padding:14px clamp(16px,3vw,40px);
+  border-bottom:1px solid var(--line);
+  background:rgba(8,9,14,.72);
+  backdrop-filter:blur(18px) saturate(140%);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);
+}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+.logo{
+  width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+  background:linear-gradient(140deg,var(--accent),#4f46e5 55%,var(--accent2));
+  box-shadow:0 8px 24px -8px rgba(124,92,255,.9);
+  font-size:15px;color:#fff;
+}
+.t1{font-size:15px;font-weight:650;letter-spacing:.4px}
+.t2{font-size:10.5px;color:var(--muted);letter-spacing:2.2px;margin-top:1px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{
+  font-size:12px;color:var(--muted);padding:6px 11px;border-radius:999px;
+  border:1px solid var(--line);background:var(--panel);white-space:nowrap;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.chip b{color:var(--text);font-weight:600}
+.chip.ok{color:#9ff0d0;border-color:rgba(52,211,153,.34);background:rgba(52,211,153,.10)}
+.chip.addr{font-family:ui-monospace,"Cascadia Code",Consolas,monospace;color:#c9cdfa;border-color:rgba(124,92,255,.38);background:rgba(124,92,255,.12)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(52,211,153,.18)}
+.dot.bad{background:var(--err);box-shadow:0 0 0 3px rgba(251,113,133,.18)}
+
+/* load meters */
+.chip.load{gap:8px;padding:5px 10px}
+.chip.load .lbl{font-size:10.5px;color:var(--muted);letter-spacing:.6px}
+.chip.load .mini{width:46px;height:5px;border-radius:99px;background:rgba(255,255,255,.13);overflow:hidden;display:inline-block}
+.chip.load .mini i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#22d3ee,#7c5cff);transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.chip.load .val{font-size:11.5px;font-variant-numeric:tabular-nums;min-width:32px;text-align:right;color:var(--text)}
+
+/* ---------- layout ---------- */
+main{
+  max-width:1320px;margin:0 auto;padding:clamp(16px,2.4vw,28px) clamp(14px,3vw,40px) 70px;
+  display:grid;grid-template-columns:minmax(300px,340px) minmax(0,1fr);gap:22px;align-items:start;
+}
+@media(max-width:940px){ main{grid-template-columns:1fr} }
+@media(max-width:520px){
+  main{padding-left:12px;padding-right:12px;gap:16px}
+  .top{padding:10px 13px;gap:10px}
+  .panel{padding:14px}
+  .field{flex-direction:column;align-items:stretch;gap:7px;margin:14px 0}
+  .field select{width:100%;min-width:0}
+  .drop{padding:28px 14px}
+  #toast{left:12px;right:12px;transform:translateY(20px);max-width:none;text-align:center}
+  #toast.show{transform:translateY(0)}
+}
+.panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px;backdrop-filter:blur(8px);
+}
+aside.panel{position:sticky;top:86px}
+@media(max-width:940px){ aside.panel{position:static} }
+h2{font-size:12px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);margin:0 0 14px;font-weight:600}
+
+/* ---------- profile cards ---------- */
+.profiles{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.pcard{
+  display:flex;align-items:flex-start;gap:11px;padding:11px 12px;border-radius:12px;
+  border:1px solid var(--line);background:rgba(255,255,255,.02);text-align:left;
+  transition:border-color .15s,background .15s,transform .15s;
+}
+.pcard:hover{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.045)}
+.pcard.on{
+  border-color:rgba(124,92,255,.75);
+  background:linear-gradient(135deg,rgba(124,92,255,.20),rgba(34,211,238,.07));
+  box-shadow:0 0 0 1px rgba(124,92,255,.25) inset;
+}
+.pcard .ic{
+  width:28px;height:28px;border-radius:8px;flex:none;display:grid;place-items:center;
+  font-size:11px;font-weight:700;letter-spacing:.3px;
+  background:rgba(255,255,255,.07);color:#cfd3ea;
+}
+.pcard.on .ic{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.pcard .nm{font-size:13.5px;font-weight:600;line-height:1.3}
+.pcard .ds{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+
+/* ---------- fields ---------- */
+.field{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0}
+.field label{font-size:12.5px;color:var(--muted)}
+select,input[type=text]{
+  background:#14161f;border:1px solid var(--line);color:var(--text);
+  padding:7px 10px;border-radius:9px;font-size:12.5px;outline:none;min-width:118px;
+}
+select:focus,input[type=text]:focus{border-color:rgba(124,92,255,.7)}
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:5px;border-radius:99px;outline:none;
+  background:linear-gradient(90deg,var(--accent) var(--p,50%),rgba(255,255,255,.12) var(--p,50%));
+  margin:4px 0 10px;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:#fff;border:3px solid var(--accent);cursor:pointer;
+  box-shadow:0 2px 10px rgba(0,0,0,.5);
+}
+.qrow{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--muted)}
+.qrow b{font-size:15px;color:var(--text);font-variant-numeric:tabular-nums}
+.qhint{font-size:11px;color:var(--muted);margin:-4px 0 8px;line-height:1.5}
+details.adv{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+details.adv summary{font-size:12px;color:var(--muted);cursor:pointer;list-style:none}
+details.adv summary::-webkit-details-marker{display:none}
+details.adv summary:before{content:"+ ";color:var(--accent)}
+details.adv[open] summary:before{content:"− "}
+details.adv input{width:100%;margin-top:10px;font-family:ui-monospace,Consolas,monospace;font-size:11.5px}
+.tip{font-size:11px;color:var(--muted);line-height:1.6;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.tip code{color:#c9cdfa;background:rgba(124,92,255,.12);padding:1px 5px;border-radius:5px;font-size:10.5px}
+
+/* ---------- drop zone ---------- */
+.drop{
+  position:relative;border:1.5px dashed rgba(255,255,255,.16);border-radius:var(--radius);
+  padding:38px 20px;text-align:center;transition:.2s;
+  background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.008));
+}
+.drop.hot{border-color:var(--accent);background:rgba(124,92,255,.10);transform:scale(1.005)}
+.drop .ic{font-size:26px;line-height:1;margin-bottom:10px;opacity:.85}
+.drop .t{font-size:14px}
+.drop .s{font-size:11.5px;color:var(--muted);margin-top:7px;letter-spacing:.3px}
+.link{background:none;border:none;padding:0;color:#a89bff;text-decoration:underline;text-underline-offset:3px}
+
+/* ---------- uploads ---------- */
+.ups{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.up{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:10px 13px}
+.up .r{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:7px}
+.up .r span:first-child{color:var(--text);max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- section head ---------- */
+.shead{display:flex;align-items:baseline;justify-content:space-between;margin:24px 2px 12px}
+.shead h2{margin:0}
+.shead .m{font-size:11.5px;color:var(--muted)}
+.head-actions{display:flex;align-items:center;gap:10px}
+.staged-card{border-style:dashed}
+.staged-card .jmeta .warn{color:#fbbf24}
+.chip-sub{
+  font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid rgba(34,211,238,.35);
+  background:rgba(34,211,238,.08);color:#a9f0ff;
+}
+.chip-sub.none{color:var(--muted);border-color:var(--line);background:transparent}
+
+/* ---------- job cards ---------- */
+.jobs{display:flex;flex-direction:column;gap:10px}
+.job{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 15px;
+  transition:border-color .2s,background .2s;
+}
+.job:hover{border-color:rgba(255,255,255,.16)}
+.job.running{border-color:rgba(124,92,255,.45);background:linear-gradient(180deg,rgba(124,92,255,.09),rgba(255,255,255,.02))}
+.job.done{border-color:rgba(52,211,153,.25)}
+.job.error{border-color:rgba(251,113,133,.35)}
+.jtop{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.jname{
+  font-size:13.5px;font-weight:560;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  flex:1;min-width:0;
+}
+.badges{display:flex;gap:6px;flex:none}
+.badge{
+  font-size:10.5px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);
+  color:var(--muted);white-space:nowrap;letter-spacing:.2px;
+}
+.badge.prof{color:#c3b7ff;border-color:rgba(124,92,255,.35);background:rgba(124,92,255,.12)}
+.badge.st-queued{color:#c7cbe0}
+.badge.st-running{color:#a9f0ff;border-color:rgba(34,211,238,.4);background:rgba(34,211,238,.1)}
+.badge.st-done{color:#9ff0d0;border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.1)}
+.badge.st-error{color:#ffb3c1;border-color:rgba(251,113,133,.4);background:rgba(251,113,133,.1)}
+.badge.st-canceled{color:#9aa0b8}
+.bar{height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;position:relative}
+.bar i{
+  display:block;height:100%;width:0;border-radius:99px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  transition:width .5s cubic-bezier(.2,.8,.2,1);
+  position:relative;overflow:hidden;
+}
+.job.running .bar i:after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);
+  animation:sheen 1.6s linear infinite;
+}
+@keyframes sheen{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.job.done .bar i{background:linear-gradient(90deg,#10b981,#34d399)}
+.job.error .bar i{background:linear-gradient(90deg,#f43f5e,#fb7185)}
+.jmeta{
+  display:flex;gap:12px;flex-wrap:wrap;align-items:center;
+  font-size:11.5px;color:var(--muted);margin-top:9px;
+  font-variant-numeric:tabular-nums;
+}
+.jmeta .pct{color:var(--text);font-weight:600;min-width:44px}
+.jmeta .err{color:#ffb3c1}
+.jmeta .warn{color:#fbbf24}
+.jactions{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+.btn{
+  background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:9px;
+  padding:6px 12px;font-size:12px;color:#cfd3ea;transition:.15s;
+}
+.btn:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22)}
+.btn.pri{background:linear-gradient(135deg,var(--accent),#5b4bdb);border-color:transparent;color:#fff}
+.btn.pri:hover{filter:brightness(1.12)}
+.btn.danger:hover{border-color:rgba(251,113,133,.5);color:#ffb3c1}
+.empty{
+  text-align:center;color:var(--muted);font-size:12.5px;padding:44px 0;
+  border:1px dashed var(--line);border-radius:14px;
+}
+
+/* ---------- inbox ---------- */
+.inbox{margin-top:22px;border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:13px 15px}
+.inbox summary{cursor:pointer;font-size:12.5px;color:var(--muted);list-style:none}
+.inbox summary::-webkit-details-marker{display:none}
+.inbox summary:before{content:"▸ ";color:var(--accent)}
+.inbox[open] summary:before{content:"▾ "}
+.inbox .in{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12.5px}
+.inbox .in:last-child{border-bottom:none}
+.inbox .in .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inbox .in .s{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+
+/* ---------- toast ---------- */
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  background:#191c27;border:1px solid var(--line);border-radius:11px;padding:10px 16px;font-size:12.5px;
+  box-shadow:0 18px 40px -16px rgba(0,0,0,.9);transition:.25s;z-index:99;max-width:86vw;
+}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.bad{border-color:rgba(251,113,133,.45);color:#ffc2cd}
+
+/* ---------- log modal ---------- */
+dialog{
+  border:1px solid var(--line);border-radius:16px;background:#0d0f16;color:var(--text);
+  width:min(900px,92vw);max-height:80vh;padding:0;overflow:hidden;
+}
+dialog::backdrop{background:rgba(0,0,0,.65);backdrop-filter:blur(3px)}
+.dhead{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid var(--line)}
+.dhead b{font-size:13px}
+.dbody{
+  margin:0;padding:14px 16px;font-family:ui-monospace,Consolas,monospace;
+  font-size:11.5px;line-height:1.6;white-space:pre-wrap;word-break:break-all;
+  color:#b9bfd8;overflow:auto;max-height:64vh;
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="logo">▶</div>
+    <div>
+      <div class="t1">转码工作站</div>
+      <div class="t2">TRANSCODE · LAN</div>
+    </div>
+  </div>
+  <div class="chips">
+    <span class="chip" id="chipState"><span class="dot" id="dot"></span><span id="stateText">连接中</span></span>
+    <span class="chip load" id="chipCpuLoad" title="CPU 占用">
+      <span class="lbl">CPU</span><span class="mini"><i id="cpuBar"></i></span><span class="val" id="cpuVal">–</span>
+    </span>
+    <span class="chip load" id="chipGpuLoad" title="GPU 视频编解码引擎占用">
+      <span class="lbl">GPU</span><span class="mini"><i id="gpuBar"></i></span><span class="val" id="gpuVal">–</span>
+    </span>
+    <span class="chip" id="chipHw" style="display:none"></span>
+    <span class="chip" id="chipCpu" style="display:none"></span>
+    <span class="chip addr" id="chipAddr">—</span>
+  </div>
+</header>
+
+<main>
+  <aside class="panel">
+    <h2>编码方案</h2>
+    <div class="profiles" id="profiles"></div>
+
+    <div class="qrow"><label>画质（数值越小越好）</label><b id="qval">—</b></div>
+    <input type="range" id="quality" min="16" max="34" step="1" value="26">
+    <div class="qhint" id="qhint"></div>
+
+    <div class="field">
+      <label>分辨率</label>
+      <select id="resolution">
+        <option value="source">保持原样</option>
+        <option value="1080p">最高 1080p</option>
+        <option value="720p">最高 720p</option>
+        <option value="480p">最高 480p</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>帧率</label>
+      <select id="fps">
+        <option value="source">保持原样</option>
+        <option value="30">最高 30 fps</option>
+        <option value="25">最高 25 fps</option>
+        <option value="24">最高 24 fps</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>音频</label>
+      <select id="audio">
+        <option value="copy">自动（能复制就复制，否则转 AAC）</option>
+        <option value="av_aac">统一转 AAC 160k</option>
+        <option value="none">不要音轨</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>字幕</label>
+      <select id="subtitle">
+        <option value="none">不处理</option>
+        <option value="burn">烧录成硬字幕</option>
+        <option value="soft">软字幕（可开关）</option>
+      </select>
+    </div>
+    <div class="field" id="subTrackField" style="display:none">
+      <label>字幕轨道</label>
+      <select id="subTrack">
+        <option value="auto">自动（优先中文）</option>
+        <option value="1">第 1 条</option>
+        <option value="2">第 2 条</option>
+        <option value="3">第 3 条</option>
+        <option value="4">第 4 条</option>
+      </select>
+    </div>
+
+    <details class="adv">
+      <summary>高级参数</summary>
+      <input type="text" id="custom" placeholder="例如 --decomb --crop 0:0:0:0">
+    </details>
+
+    <div class="tip">
+      输出统一为 <code>mp4</code>，完成后可直接在手机 / 电视播放。<br>
+      硬编（AMD VCE）走显卡，速度快、CPU 占用低；CPU 精压体积更小但慢。<br>
+      字幕：<b>烧录</b>会印在画面上（任何设备都能看）；<b>软字幕</b>只是封进 mp4，播放器里可开关（图形字幕会自动改为烧录）。外挂 <code>.srt</code> / <code>.ass</code> 需和视频一起拖进来，ASS 的样式会完整保留。
+    </div>
+  </aside>
+
+  <section>
+    <div class="drop" id="drop">
+      <input type="file" id="picker" multiple accept="video/*,.mkv,.ts,.m2ts,.mov,.avi,.wmv,.flv,.webm,.srt,.ass,.ssa" hidden>
+      <input type="file" id="subPicker" accept=".srt,.ass,.ssa" hidden>
+      <div class="ic">⇪</div>
+      <div class="t">把视频拖到这里，或 <button class="link" id="pickBtn">选择文件</button></div>
+      <div class="s">支持 mp4 / mkv / mov / avi / ts / flv / webm · 可多选 · 外挂字幕（.srt）和视频一起拖进来</div>
+    </div>
+    <div class="ups" id="ups"></div>
+
+    <div class="shead">
+      <h2>待处理</h2>
+      <div class="head-actions">
+        <span class="m" id="stagedInfo"></span>
+        <button class="btn pri" id="startAllBtn" style="display:none">全部开始</button>
+      </div>
+    </div>
+    <div class="jobs" id="staged"></div>
+    <div class="empty" id="stagedEmpty">上传后先停在这里，确认字幕和参数，再点「开始转码」</div>
+
+    <div class="shead">
+      <h2>任务队列</h2>
+      <span class="m" id="queueInfo"></span>
+    </div>
+    <div class="jobs" id="jobs"></div>
+    <div class="empty" id="empty">还没有任务，先拖一个视频进来吧</div>
+
+    <details class="inbox" id="inboxBox">
+      <summary>服务器本地文件（inbox 文件夹）</summary>
+      <div id="inboxList"><div class="in" style="color:var(--muted)">读取中…</div></div>
+    </details>
+  </section>
+</main>
+
+<div id="toast"></div>
+
+<dialog id="logDialog">
+  <div class="dhead">
+    <b id="logTitle">日志</b>
+    <button class="btn" id="logClose">关闭</button>
+  </div>
+  <pre class="dbody" id="logBody"></pre>
+</dialog>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+
+const STATE = {
+  profiles: [],
+  profile: localStorage.getItem("ts.profile") || "h264-vce",
+  quality: parseFloat(localStorage.getItem("ts.quality") || "0"),
+  resolution: localStorage.getItem("ts.resolution") || "source",
+  fps: localStorage.getItem("ts.fps") || "source",
+  audio: localStorage.getItem("ts.audio") || "copy",
+  subtitle: localStorage.getItem("ts.subtitle") || "none",
+  subTrack: localStorage.getItem("ts.subTrack") || "auto",
+  custom: localStorage.getItem("ts.custom") || "",
+  jobs: [],
+  staged: [],
+  cards: new Map(),
+  online: false
+};
+
+/* ---------------- helpers ---------------- */
+async function api(path, opts) {
+  const r = await fetch(path, opts || {});
+  if (!r.ok) throw new Error((await r.text()) || ("HTTP " + r.status));
+  const ct = r.headers.get("content-type") || "";
+  return ct.indexOf("json") >= 0 ? r.json() : r.text();
+}
+
+function fmtMB(bytes) {
+  if (!bytes) return "0 MB";
+  const mb = bytes / 1048576;
+  if (mb >= 1024) return (mb / 1024).toFixed(2) + " GB";
+  return mb.toFixed(mb < 10 ? 2 : 1) + " MB";
+}
+
+function fmtSec(s) {
+  s = Math.round(s || 0);
+  if (s < 60) return s + " 秒";
+  const m = Math.floor(s / 60), r = s % 60;
+  if (m < 60) return m + " 分 " + r + " 秒";
+  return Math.floor(m / 60) + " 时 " + (m % 60) + " 分";
+}
+
+function fmtEta(e) {
+  if (!e) return "";
+  const m = /^(\d+)h(\d+)m(\d+)s$/.exec(e);
+  if (!m) return e;
+  const h = +m[1], mi = +m[2], s = +m[3];
+  const pad = (n) => String(n).padStart(2, "0");
+  return h > 0 ? h + ":" + pad(mi) + ":" + pad(s) : mi + ":" + pad(s);
+}
+
+let toastTimer = null;
+function toast(msg, bad) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "show" + (bad ? " bad" : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ""; }, 3200);
+}
+
+/* ---------------- profiles ---------------- */
+const ICONS = { "h264-vce": "264", "h265-vce": "265", "h264-cpu": "CPU", "h265-cpu": "CPU", "h264-fast": "FAST" };
+
+function renderProfiles() {
+  const box = $("profiles");
+  box.innerHTML = "";
+  STATE.profiles.forEach(p => {
+    const b = document.createElement("button");
+    b.className = "pcard" + (p.id === STATE.profile ? " on" : "");
+    b.dataset.id = p.id;
+    b.innerHTML = '<div class="ic">' + (ICONS[p.id] || "ENC") + '</div>' +
+      '<div><div class="nm">' + p.label + '</div><div class="ds">' + p.desc + '</div></div>';
+    b.onclick = () => selectProfile(p.id);
+    box.appendChild(b);
+  });
+}
+
+function currentProfile() {
+  return STATE.profiles.find(p => p.id === STATE.profile) || STATE.profiles[0];
+}
+
+function selectProfile(id) {
+  STATE.profile = id;
+  localStorage.setItem("ts.profile", id);
+  const p = currentProfile();
+  STATE.quality = p.quality;
+  $("quality").disabled = !!p.copy;
+  syncQualityUI();
+  document.querySelectorAll(".pcard").forEach(el => el.classList.toggle("on", el.dataset.id === id));
+}
+
+function syncQualityUI() {
+  const p = currentProfile() || { quality: 26 };
+  const q = STATE.quality || p.quality || 26;
+  const range = $("quality");
+  range.value = q;
+  range.style.setProperty("--p", ((q - 16) / 18 * 100) + "%");
+  $("qval").textContent = p.copy ? "—" : q;
+  $("qhint").textContent = p.copy
+    ? "该方案不重新编码视频，只更换 mp4 封装"
+    : (q <= 20 ? "画质优先：文件更大，细节保留最好"
+      : q <= 25 ? "均衡：画质与体积兼顾"
+        : q <= 29 ? "体积优先：肉眼轻微损失"
+          : "极限压缩：画质明显下降，适合只看内容");
+  localStorage.setItem("ts.quality", q);
+}
+
+function syncSubUI() {
+  const f = $("subTrackField");
+  if (f) f.style.display = STATE.subtitle === "none" ? "none" : "flex";
+}
+
+/* ---------------- status ---------------- */
+function setMeter(which, v, tip) {
+  const chip = $(which === "cpu" ? "chipCpuLoad" : "chipGpuLoad");
+  const bar = $(which === "cpu" ? "cpuBar" : "gpuBar");
+  const val = $(which === "cpu" ? "cpuVal" : "gpuVal");
+  if (!chip) return;
+  if (v == null || v < 0) { chip.style.display = "none"; return; }
+  chip.style.display = "inline-flex";
+  chip.title = tip + "：" + Math.round(v) + "%";
+  bar.style.width = Math.min(100, Math.max(0, v)) + "%";
+  val.textContent = Math.round(v) + "%";
+  const hotAt = which === "gpu" ? 97 : 92;
+  const warmAt = which === "gpu" ? 80 : 70;
+  bar.style.background = v >= hotAt
+    ? "linear-gradient(90deg,#fb7185,#f43f5e)"
+    : v >= warmAt
+      ? "linear-gradient(90deg,#fbbf24,#f59e0b)"
+      : (which === "gpu" ? "linear-gradient(90deg,#34d399,#22d3ee)" : "linear-gradient(90deg,#22d3ee,#7c5cff)");
+}
+
+async function refreshStatus() {
+  try {
+    const s = await api("/api/status");
+    STATE.online = true;
+    $("dot").className = "dot";
+    $("stateText").textContent = "在线";
+    $("chipAddr").textContent = "http://" + (s.addresses || "127.0.0.1").split(",")[0].trim() + ":" + s.port;
+    $("chipAddr").title = "局域网访问地址";
+    setMeter("cpu", s.cpuLoad, "CPU 占用");
+    setMeter("gpu", s.gpuLoad, s.gpuEngine ? ("GPU 视频引擎 " + s.gpuEngine) : "GPU 视频编解码引擎");
+    const hw = $("chipHw");
+    hw.style.display = "inline-flex";
+    hw.className = "chip" + (s.hw ? " ok" : "");
+    hw.textContent = s.hw ? "AMD 硬编可用" : "仅软件编码";
+    const cpu = $("chipCpu");
+    cpu.style.display = "inline-flex";
+    cpu.textContent = (s.cpu || "CPU").replace(/\(R\)|\(TM\)|with .*/g, "").trim() + " · " + s.cores + " 核";
+    cpu.title = s.cpu + "\nHandBrake " + s.handbrake + "\n剩余空间 " + s.diskFreeGB + " GB";
+  } catch (e) {
+    STATE.online = false;
+    $("dot").className = "dot bad";
+    $("stateText").textContent = "离线";
+  }
+}
+
+/* ---------------- jobs ---------------- */
+const ST_TEXT = { queued: "排队中", running: "转码中", done: "已完成", error: "失败", canceled: "已取消" };
+
+async function refreshJobs() {
+  if (!STATE.online) return;
+  let jobs;
+  try { jobs = await api("/api/jobs"); } catch (e) { return; }
+  STATE.jobs = jobs;
+
+  const seen = new Set();
+  jobs.forEach(j => { seen.add(j.id); upsertCard(j); });
+  STATE.cards.forEach((el, id) => { if (!seen.has(id)) { el.remove(); STATE.cards.delete(id); } });
+
+  $("empty").style.display = jobs.length ? "none" : "block";
+  const running = jobs.filter(j => j.status === "running").length;
+  const queued = jobs.filter(j => j.status === "queued").length;
+  $("queueInfo").textContent = jobs.length
+    ? jobs.length + " 个任务" + (running ? " · " + running + " 个进行中" : "") + (queued ? " · " + queued + " 个排队" : "")
+    : "";
+}
+
+function upsertCard(j) {
+  let el = STATE.cards.get(j.id);
+  if (!el) {
+    el = document.createElement("div");
+    el.className = "job";
+    el.dataset.id = j.id;
+    el.innerHTML =
+      '<div class="jtop">' +
+        '<div class="jname"></div>' +
+        '<div class="badges"><span class="badge prof"></span><span class="badge st"></span></div>' +
+      '</div>' +
+      '<div class="bar"><i></i></div>' +
+      '<div class="jmeta"></div>' +
+      '<div class="jactions"></div>';
+    $("jobs").appendChild(el);
+    STATE.cards.set(j.id, el);
+  }
+
+  el.className = "job " + j.status;
+  el.querySelector(".jname").textContent = j.name;
+  el.querySelector(".jname").title = j.name;
+  el.querySelector(".prof").textContent = j.profileLabel;
+
+  const st = el.querySelector(".st");
+  st.className = "badge st st-" + j.status;
+  if (j.status === "running" && j.stage === "probe") st.textContent = "扫描中";
+  else if (j.status === "running" && j.stage === "subtitle") st.textContent = "封装字幕";
+  else st.textContent = ST_TEXT[j.status] || j.status;
+
+  el.querySelector(".bar i").style.width = (j.status === "running" ? j.progress : (j.status === "done" ? 100 : 0)) + "%";
+
+  /* meta line */
+  const meta = el.querySelector(".jmeta");
+  meta.innerHTML = "";
+  const add = (txt, cls) => {
+    const s = document.createElement("span");
+    if (cls) s.className = cls;
+    s.textContent = txt;
+    meta.appendChild(s);
+  };
+
+  if (j.status === "running") {
+    add(Math.round(j.progress) + "%", "pct");
+    if (j.speed > 0) add(j.speed.toFixed(2) + "× 实时");
+    else if (j.fps > 0) add(Math.round(j.fps) + " fps");
+    if (j.eta) add("剩余 " + fmtEta(j.eta));
+    add(fmtMB(j.sizeIn) + " 源文件");
+  } else if (j.status === "done") {
+    add("100%", "pct");
+    add(fmtMB(j.sizeIn) + " → " + fmtMB(j.sizeOut));
+    if (j.elapsed) add("耗时 " + fmtSec(j.elapsed));
+    if (j.sizeOut && j.sizeIn) {
+      const d = Math.round((1 - j.sizeOut / j.sizeIn) * 100);
+      add(d > 0 ? "缩小 " + d + "%" : "增大 " + Math.abs(d) + "%");
+    }
+  } else if (j.status === "error") {
+    add(j.error || "转码失败", "err");
+  } else if (j.status === "queued") {
+    add("等待前面的任务完成…");
+    add(fmtMB(j.sizeIn) + " 源文件");
+  } else {
+    add("已停止");
+  }
+
+  if (j.subtitleUsed) add("字幕 " + j.subtitleUsed);
+  else if (j.subtitleNote) add("字幕：" + j.subtitleNote, "warn");
+
+  /* actions */
+  const act = el.querySelector(".jactions");
+  act.innerHTML = "";
+  const mk = (label, cls, fn) => {
+    const b = document.createElement("button");
+    b.className = "btn " + (cls || "");
+    b.textContent = label;
+    b.onclick = fn;
+    act.appendChild(b);
+  };
+
+  if (j.status === "running" || j.status === "queued") {
+    mk("取消", "danger", () => cancelJob(j.id));
+  }
+  if (j.status === "done" && j.hasOutput) {
+    mk("下载", "pri", () => { window.location.href = "/api/jobs/" + j.id + "/download"; });
+  }
+  if (j.status === "error" || j.status === "canceled") {
+    mk("重新加入", "", () => retryJob(j));
+  }
+  mk("日志", "", () => showLog(j));
+
+  /* clean finished jobs with one click */
+  if (j.status === "done" || j.status === "error" || j.status === "canceled") {
+    mk("删除", "danger", () => deleteJob(j.id));
+  }
+}
+
+async function cancelJob(id) {
+  try { await api("/api/jobs/" + id + "/cancel", { method: "POST" }); toast("已取消"); }
+  catch (e) { toast("取消失败：" + e.message, true); }
+  refreshJobs();
+}
+
+async function deleteJob(id, silent) {
+  if (!silent && !confirm("删除这个任务及它的输出文件？")) return;
+  try {
+    await api("/api/jobs/" + id + "?purge=1", { method: "DELETE" });
+    if (!silent) toast("已删除");
+  } catch (e) { toast("删除失败：" + e.message, true); }
+  refreshJobs();
+}
+
+async function retryJob(job) {
+  try {
+    await createJob(job.name, job.source, "", job.subtitleMode);
+    toast("已重新加入队列");
+  } catch (e) { toast("重新加入失败：" + e.message, true); }
+}
+
+/* ---------------- create job ---------------- */
+async function createJob(name, source, subtitleFile, subModeOverride) {
+  const p = currentProfile() || {};
+  const body = {
+    source: source || ("work/" + name),
+    profile: STATE.profile,
+    quality: p.copy ? 0 : parseFloat($("quality").value),
+    resolution: $("resolution").value,
+    fps: $("fps").value,
+    audio: $("audio").value,
+    custom: $("custom").value.trim(),
+    subtitleMode: subModeOverride || $("subtitle").value,
+    subtitleTrack: $("subTrack").value,
+    subtitleFile: subtitleFile || ""
+  };
+  await api("/api/jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  refreshJobs();
+}
+
+/* ---------------- upload / staging ---------------- */
+const uploadQueue = [];
+const pendingSubs = [];       // subtitle files waiting for a matching video
+let uploading = false;
+let attachTarget = null;      // staged item waiting for a manually picked subtitle
+
+const SUB_RE = /\.(srt|ass|ssa)$/i;
+const baseName = (n) => n.replace(/\.[^.]+$/, "").toLowerCase();
+
+function subMatches(subName, videoName) {
+  const s = baseName(subName), v = baseName(videoName);
+  if (s === v) return true;
+  if (s.startsWith(v + ".") || s.startsWith(v + "_") || s.startsWith(v + "-")) return true;
+  if (v.startsWith(s + ".") || v.startsWith(s + "_") || v.startsWith(s + "-")) return true;
+  return false;
+}
+
+function queueUploads(files) {
+  const list = Array.from(files).filter(f => f && f.size);
+  const subs = list.filter(f => SUB_RE.test(f.name));
+  const vids = list.filter(f => !SUB_RE.test(f.name));
+
+  if (!vids.length && subs.length) {
+    let queued = 0;
+    subs.forEach(s => {
+      const target = STATE.staged.find(v => subMatches(s.name, v.name));
+      if (target) { uploadQueue.push({ kind: "sub", file: s, target }); queued++; }
+      else pendingSubs.push(s);
+    });
+    if (!queued) toast("字幕已收到，视频上传后会自动配对", false);
+    renderStaged();
+    pumpUploads();
+    return;
+  }
+
+  vids.forEach(v => {
+    if (v.size > 8 * 1024 * 1024 * 1024) { toast(v.name + " 超过 8GB，已跳过", true); return; }
+    let match = subs.find(s => subMatches(s.name, v.name));
+    if (!match && vids.length === 1 && subs.length === 1) match = subs[0];
+    uploadQueue.push({ kind: "video", file: v, sub: match || null });
+  });
+  pumpUploads();
+}
+
+async function pumpUploads() {
+  if (uploading) return;
+  uploading = true;
+  while (uploadQueue.length) {
+    const task = uploadQueue.shift();
+    if (task.kind === "video") await uploadVideoTask(task.file, task.sub);
+    else await uploadSubTask(task.file, task.target);
+  }
+  uploading = false;
+  renderStaged();
+}
+
+function makeUpRow(text) {
+  const row = document.createElement("div");
+  row.className = "up";
+  row.innerHTML = '<div class="r"><span>' + escapeHtml(text) + '</span><span>0%</span></div>' +
+    '<div class="bar"><i></i></div>';
+  $("ups").appendChild(row);
+  return row;
+}
+function setRowProgress(row, f) {
+  row.querySelector(".bar i").style.width = (f * 100).toFixed(1) + "%";
+  row.querySelector(".r span:last-child").textContent = Math.round(f * 100) + "%";
+}
+function setRowText(row, t) {
+  row.querySelector(".r span:last-child").textContent = t;
+}
+function setRowFail(row, msg) {
+  const s = row.querySelector(".r span:last-child");
+  s.textContent = "失败";
+  s.style.color = "var(--err)";
+  toast(msg || "上传失败", true);
+  setTimeout(() => row.remove(), 5000);
+}
+
+async function uploadVideoTask(file, subFile) {
+  const row = makeUpRow(file.name + (subFile ? "  +  " + subFile.name : ""));
+  try {
+    const res = await uploadFile(file, (f) => setRowProgress(row, f));
+    const item = {
+      key: res.group, name: res.name, source: res.source, size: res.size, group: res.group,
+      subFile: "", subName: "", subs: null, probing: true
+    };
+    STATE.staged.push(item);
+    renderStaged();
+
+    let sub = subFile;
+    if (!sub) {
+      const idx = pendingSubs.findIndex(s => subMatches(s.name, file.name));
+      if (idx >= 0) { sub = pendingSubs[idx]; pendingSubs.splice(idx, 1); }
+    }
+    if (sub) {
+      setRowText(row, "上传字幕…");
+      const s = await uploadFile(sub, () => { }, item.group);
+      item.subFile = s.source;
+      item.subName = s.name;
+      renderStaged();
+    }
+
+    setRowText(row, "检测字幕…");
+    try {
+      const info = await api("/api/probe?source=" + encodeURIComponent(item.source));
+      item.subs = info.subs || [];
+      item.duration = info.duration || 0;
+    } catch (e) {
+      item.subs = [];
+    }
+    item.probing = false;
+    renderStaged();
+    row.remove();
+    toast(res.name + " 已就绪，确认后点「开始转码」");
+  } catch (e) {
+    setRowFail(row, file.name + " 上传失败：" + e.message);
+  }
+}
+
+async function uploadSubTask(file, target) {
+  const row = makeUpRow(file.name + "  →  " + target.name);
+  try {
+    const s = await uploadFile(file, (f) => setRowProgress(row, f), target.group);
+    target.subFile = s.source;
+    target.subName = s.name;
+    renderStaged();
+    row.remove();
+    toast(file.name + " 已配到 " + target.name);
+  } catch (e) {
+    setRowFail(row, file.name + " 上传失败：" + e.message);
+  }
+}
+
+function uploadFile(file, onProgress, group) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    let url = "/api/upload?name=" + encodeURIComponent(file.name);
+    if (group) url += "&group=" + encodeURIComponent(group);
+    xhr.open("PUT", url);
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    xhr.onload = () => {
+      if (xhr.status === 200) { try { resolve(JSON.parse(xhr.responseText)); } catch (e) { reject(e); } }
+      else reject(new Error(xhr.responseText || ("HTTP " + xhr.status)));
+    };
+    xhr.onerror = () => reject(new Error("网络中断"));
+    xhr.send(file);
+  });
+}
+
+/* ---------------- staged list ---------------- */
+function renderStaged() {
+  const box = $("staged");
+  if (!box) return;
+  box.innerHTML = "";
+  const items = STATE.staged;
+  const total = items.length + pendingSubs.length;
+  $("stagedEmpty").style.display = total ? "none" : "block";
+  $("startAllBtn").style.display = items.length ? "inline-block" : "none";
+  $("stagedInfo").textContent = items.length
+    ? items.length + " 个待开始" + (pendingSubs.length ? " · " + pendingSubs.length + " 个字幕待配对" : "")
+    : (pendingSubs.length ? pendingSubs.length + " 个字幕待配对" : "");
+
+  items.forEach(item => {
+    const el = document.createElement("div");
+    el.className = "job staged-card";
+
+    let chip = '<span class="chip-sub none">无内嵌字幕</span>';
+    if (item.probing) chip = '<span class="chip-sub">检测字幕中…</span>';
+    else if (item.subs && item.subs.length) {
+      chip = '<span class="chip-sub">内嵌 ' + item.subs.length + ' 条：' +
+        item.subs.map(s => escapeHtml(s.name || ("轨道 " + s.track))).join("、") + '</span>';
+    }
+    if (item.subFile) chip += ' <span class="chip-sub">外挂 ' + escapeHtml(item.subName) + '</span>';
+
+    const hasSub = (item.subs && item.subs.length) || item.subFile;
+    const mode = $("subtitle").value;
+    const warn = hasSub && mode === "none";
+
+    el.innerHTML =
+      '<div class="jtop"><div class="jname">' + escapeHtml(item.name) + '</div>' +
+        '<div class="badges"><span class="badge prof">' + fmtMB(item.size) + '</span></div></div>' +
+      '<div class="jmeta">' + chip + '</div>' +
+      (warn ? '<div class="jmeta"><span class="warn">字幕设置为「不处理」，这条字幕不会被使用</span></div>' : '') +
+      '<div class="jactions"></div>';
+
+    const act = el.querySelector(".jactions");
+    const mk = (label, cls, fn) => {
+      const b = document.createElement("button");
+      b.className = "btn " + (cls || "");
+      b.textContent = label;
+      b.onclick = fn;
+      act.appendChild(b);
+    };
+
+    mk("开始转码", "pri", () => startStaged(item));
+    if (warn) mk("烧录字幕并开始", "", () => startStaged(item, "burn"));
+    if (!item.subFile) mk("配字幕", "", () => pickSubFor(item));
+    mk("移除", "danger", () => removeStaged(item));
+    box.appendChild(el);
+  });
+
+  pendingSubs.forEach((f, i) => {
+    const el = document.createElement("div");
+    el.className = "job staged-card";
+    el.innerHTML =
+      '<div class="jtop"><div class="jname">' + escapeHtml(f.name) + '</div>' +
+        '<div class="badges"><span class="badge">字幕</span></div></div>' +
+      '<div class="jmeta"><span class="warn">等视频上传后自动配对，或先上传视频再点「配字幕」</span></div>' +
+      '<div class="jactions"></div>';
+    const b = document.createElement("button");
+    b.className = "btn danger";
+    b.textContent = "移除";
+    b.onclick = () => { pendingSubs.splice(i, 1); renderStaged(); };
+    el.querySelector(".jactions").appendChild(b);
+    box.appendChild(el);
+  });
+}
+
+function pickSubFor(item) {
+  attachTarget = item;
+  $("subPicker").click();
+}
+
+async function startStaged(item, forceMode) {
+  try {
+    await createJob(item.name, item.source, item.subFile, forceMode);
+    STATE.staged = STATE.staged.filter(x => x !== item);
+    renderStaged();
+    toast(item.name + " 已加入队列");
+    refreshJobs();
+  } catch (e) {
+    toast("加入队列失败：" + e.message, true);
+  }
+}
+
+async function startAllStaged() {
+  const items = STATE.staged.slice();
+  for (const it of items) await startStaged(it);
+}
+
+async function removeStaged(item) {
+  STATE.staged = STATE.staged.filter(x => x !== item);
+  renderStaged();
+  try { await api("/api/staged?source=" + encodeURIComponent(item.source), { method: "DELETE" }); } catch (e) { }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+/* ---------------- inbox ---------------- */
+async function refreshInbox() {
+  if (!$("inboxBox").open) return;
+  try {
+    const files = await api("/api/inbox");
+    const box = $("inboxList");
+    box.innerHTML = "";
+    if (!files.length) {
+      box.innerHTML = '<div class="in" style="color:var(--muted)">inbox 文件夹是空的。把视频拷进 <b>transcode-server\\inbox</b> 就能在这里看到。</div>';
+      return;
+    }
+    files.forEach(f => {
+      const row = document.createElement("div");
+      row.className = "in";
+      row.innerHTML = '<span class="n">' + escapeHtml(f.name) + '</span><span class="s">' + fmtMB(f.size) + '</span>';
+      const b = document.createElement("button");
+      b.className = "btn";
+      b.textContent = "加入队列";
+      b.onclick = async () => {
+        try { await createJob(f.name, f.source); toast(f.name + " 已加入队列"); }
+        catch (e) { toast("加入失败：" + e.message, true); }
+      };
+      row.appendChild(b);
+      box.appendChild(row);
+    });
+  } catch (e) { /* ignore */ }
+}
+
+/* ---------------- log ---------------- */
+async function showLog(job) {
+  $("logTitle").textContent = job.name + " · 日志";
+  $("logBody").textContent = "读取中…";
+  $("logDialog").showModal();
+  try {
+    let txt = await api("/api/jobs/" + job.id + "/log");
+    const lines = txt.split("\n");
+    if (lines.length > 400) txt = "…（省略前 " + (lines.length - 400) + " 行）\n" + lines.slice(-400).join("\n");
+    $("logBody").textContent = txt || "（暂无日志）";
+    $("logBody").scrollTop = $("logBody").scrollHeight;
+  } catch (e) {
+    $("logBody").textContent = "读取失败：" + e.message;
+  }
+}
+
+/* ---------------- wiring ---------------- */
+function init() {
+  const drop = $("drop");
+  $("pickBtn").onclick = () => $("picker").click();
+  $("picker").onchange = (e) => { queueUploads(e.target.files); e.target.value = ""; };
+  $("startAllBtn").onclick = startAllStaged;
+  $("subPicker").onchange = (e) => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    if (!f || !attachTarget) return;
+    uploadQueue.push({ kind: "sub", file: f, target: attachTarget });
+    attachTarget = null;
+    pumpUploads();
+  };
+
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => {
+    e.preventDefault(); e.stopPropagation(); drop.classList.add("hot");
+  }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => {
+    e.preventDefault(); e.stopPropagation();
+    if (ev === "dragleave" && drop.contains(e.relatedTarget)) return;
+    drop.classList.remove("hot");
+  }));
+  drop.addEventListener("drop", e => {
+    if (e.dataTransfer && e.dataTransfer.files) queueUploads(e.dataTransfer.files);
+  });
+  document.addEventListener("dragover", e => e.preventDefault());
+  document.addEventListener("drop", e => e.preventDefault());
+
+  $("quality").oninput = (e) => {
+    STATE.quality = parseFloat(e.target.value);
+    syncQualityUI();
+  };
+  $("resolution").value = STATE.resolution;
+  $("resolution").onchange = (e) => { STATE.resolution = e.target.value; localStorage.setItem("ts.resolution", e.target.value); };
+  $("fps").value = STATE.fps;
+  $("fps").onchange = (e) => { STATE.fps = e.target.value; localStorage.setItem("ts.fps", e.target.value); };
+  $("audio").value = STATE.audio;
+  $("audio").onchange = (e) => { STATE.audio = e.target.value; localStorage.setItem("ts.audio", e.target.value); };
+  $("subtitle").value = STATE.subtitle;
+  $("subtitle").onchange = (e) => {
+    STATE.subtitle = e.target.value;
+    localStorage.setItem("ts.subtitle", STATE.subtitle);
+    syncSubUI();
+  };
+  $("subTrack").value = STATE.subTrack;
+  $("subTrack").onchange = (e) => { STATE.subTrack = e.target.value; localStorage.setItem("ts.subTrack", STATE.subTrack); };
+  syncSubUI();
+  $("custom").value = STATE.custom;
+  $("custom").onchange = (e) => { STATE.custom = e.target.value; localStorage.setItem("ts.custom", e.target.value); };
+
+  $("logClose").onclick = () => $("logDialog").close();
+  $("inboxBox").addEventListener("toggle", refreshInbox);
+}
+
+async function boot() {
+  init();
+  try {
+    STATE.profiles = await api("/api/profiles");
+    const saved = STATE.profiles.find(p => p.id === STATE.profile);
+    if (!saved) STATE.profile = STATE.profiles[0].id;
+    renderProfiles();
+    if (!STATE.quality) STATE.quality = currentProfile().quality;
+    syncQualityUI();
+    $("quality").disabled = !!(currentProfile() || {}).copy;
+  } catch (e) {
+    toast("无法连接服务器", true);
+  }
+  await refreshStatus();
+  await refreshJobs();
+  setInterval(refreshStatus, 2500);
+  setInterval(() => { if (document.visibilityState === "visible") refreshJobs(); }, 1500);
+}
+
+boot();
+</script>
+</body>
+</html>

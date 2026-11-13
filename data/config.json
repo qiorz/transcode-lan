@@ -1,0 +1,9 @@
+{
+  "port": 8099,
+  "handbrake": "bin\\HandBrakeCLI.exe",
+  "ffmpeg": "bin\\ffmpeg.exe",
+  "maxParallel": 1,
+  "autoQueue": false,
+  "autoProfile": "h264-vce",
+  "autoSubtitle": "none"
+}
