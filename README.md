@@ -1,5 +1,7 @@
 # 转码工作站 · Transcode LAN
 
+[简体中文](README.md) · [English](README.en.md)
+
 把一台 Windows 电脑变成**局域网转码服务器**：手机、平板、另一台电脑打开一个网页，就能上传视频、排队转码、下载成品。底层直接调用官方 **HandBrakeCLI**（1.11.2），支持 AMD 硬件编码、CPU 精压、字幕烧录。
 
 > A tiny zero-dependency video transcoding server for your LAN. It is a single ~60 KB
@@ -11,6 +13,10 @@
 
 **为什么用它**：不用 Docker、Python、Node，不用装任何运行时（Windows 自带 .NET Framework 4.8），
 一个 exe + 一个网页就能把闲置的办公机变成“丢视频进去、拿成品出来”的转码站。
+
+> **项目状态：个人爱好项目，更新节奏不保证。**
+> 代码只在自己的一台机器上跑，没有专职维护时间 —— 新功能、修复和 issue 回复都不承诺时间表。
+> 后续计划补上 **NVIDIA（NVENC）和 Intel（Quick Sync）硬件编码**支持；在此之前，N 卡 / Intel 核显的机器请先选 CPU 方案（见文末「路线图」）。
 
 ---
 
@@ -135,7 +141,9 @@ powershell -ExecutionPolicy Bypass -File scripts\get-binaries.ps1
 
 项目作者在 AMD 核显机器上开发，硬编方案用的是 `vce_h264` / `vce_h265`。**NVIDIA / Intel 机器上这两个方案会失败**（启动时也不会显示「硬编可用」），选 CPU 方案即可正常工作。
 
-要加自己的硬编方案，先查本机编码器名：
+NVIDIA NVENC / Intel Quick Sync 的内置方案在[路线图](#十三路线图)里，还没做；急着用可以先照下面的方式自己加一条。
+
+要查本机编码器名：
 
 ```powershell
 .\bin\HandBrakeCLI.exe --encoder-list
@@ -337,7 +345,7 @@ transcode-lan\
 ## 十二、已知限制
 
 - **仅 Windows**：依赖 .NET Framework 4.8、WMI 性能计数器、`netsh` / `schtasks`。
-- **硬编只内置 AMD**：NVENC / QuickSync 需要自己加方案（见上文）。
+- **硬编只内置 AMD**：NVENC / Quick Sync 还没内置（在路线图上），目前需要自己加方案（见上文）。
 - **输出固定 MP4**：不支持 HDR 元数据保留、章节编辑、双遍编码等高级场景（可用高级参数部分弥补）。
 - **上传不支持 chunked**：需要带 `Content-Length`（浏览器和 `curl --data-binary` 都满足）。
 - **没有测试与 CI**：项目是单机工具，验证方式就是拿一个视频跑一遍。
@@ -345,7 +353,22 @@ transcode-lan\
 
 ---
 
-## 十三、第三方组件与许可
+## 十三、路线图
+
+纯按兴趣推进，没有时间表：
+
+- [ ] **NVIDIA NVENC 硬编方案**（`nvenc_h264` / `nvenc_h265`）
+- [ ] **Intel Quick Sync 硬编方案**（`qsv_h264` / `qsv_h265`）
+- [ ] 启动时用 `HandBrakeCLI --encoder-list` 自动探测本机编码器，网页只显示真正能用的方案
+- [ ] 给 `POST /api/jobs` 的来源路径加白名单（限定 `work/` 与 `inbox/`）
+- [ ] 可选的口令保护，方便在稍微复杂一点的网络里用
+
+> 这是个个人爱好项目：上面的顺序和完成时间都不承诺，issue / PR 也可能回得很慢。
+> 用得顺手就拿去用；等不及的话直接改 —— 服务端就一个 `server.cs`，加起来不到 2400 行，不看文档也能摸清。
+
+---
+
+## 十四、第三方组件与许可
 
 本项目自身代码以 **MIT** 发布（见 [LICENSE](LICENSE)）。但它调用的两个第三方程序**不包含在本仓库中**，需要你自行下载：
 
