@@ -424,6 +424,7 @@ Driven purely by interest, with no schedule:
 ## 14. Licensing and third-party components
 
 The project's own code is released under the **GNU GPL v3.0 (or later)**, see [LICENSE](LICENSE).
+Copyright © 2026 qiorz.
 
 > Why GPL instead of MIT: the `-full` release bundle ships HandBrake and FFmpeg together with
 > this code, and staying in the same license family makes the redistribution obligations

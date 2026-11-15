@@ -382,7 +382,7 @@ transcode-lan\
 
 ## 十四、许可证与第三方组件
 
-本项目自身代码以 **GNU GPL v3.0（或更新版本）** 发布，完整条款见 [LICENSE](LICENSE)。
+本项目自身代码以 **GNU GPL v3.0（或更新版本）** 发布，完整条款见 [LICENSE](LICENSE)，版权所有 © 2026 qiorz。
 
 > 为什么是 GPL 而不是 MIT：`-full` 发行包会连 HandBrake 和 FFmpeg 一起分发，用同一族许可证能把再分发的义务一次讲清楚。
 
