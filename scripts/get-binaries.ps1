@@ -1,7 +1,8 @@
 param(
     [string]$HandBrakeVersion = '1.11.2',
     [switch]$SkipFfmpeg,
-    [switch]$Force
+    [switch]$Force,
+    [string]$Proxy
 )
 
 # Downloads the two third-party programs this project drives:
@@ -23,8 +24,10 @@ function Get-RemoteFile([string]$Url, [string]$OutFile) {
     Write-Host ("[..] downloading " + $Url)
     $old = $ProgressPreference
     $ProgressPreference = 'SilentlyContinue'
+    $req = @{ Uri = $Url; OutFile = $OutFile; UseBasicParsing = $true; TimeoutSec = 3600 }
+    if ($Proxy) { $req['Proxy'] = $Proxy }
     try {
-        Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing -TimeoutSec 3600
+        Invoke-WebRequest @req
     }
     finally {
         $ProgressPreference = $old
@@ -63,7 +66,12 @@ else {
     }
     catch {
         Write-Warning ("HandBrakeCLI download failed: " + $_.Exception.Message)
-        Write-Warning ("Download HandBrakeCLI-" + $HandBrakeVersion + "-win-x86_64.zip from https://github.com/HandBrake/HandBrake/releases and copy HandBrakeCLI.exe into bin\")
+        if (-not $Proxy) {
+            Write-Host  "      If github.com is blocked or very slow on your network, retry through a proxy:"
+            Write-Host  "        powershell -ExecutionPolicy Bypass -File scripts\get-binaries.ps1 -Proxy http://127.0.0.1:7890"
+        }
+        Write-Host  "      Or download it by hand and copy HandBrakeCLI.exe into bin\ :"
+        Write-Host  ("        " + $hbUrl)
     }
 }
 
@@ -84,7 +92,11 @@ else {
     }
     catch {
         Write-Warning ("ffmpeg download failed: " + $_.Exception.Message)
-        Write-Warning "Download a Windows build from https://ffmpeg.org/download.html and copy ffmpeg.exe into bin\"
+        if (-not $Proxy) {
+            Write-Host  "      Retry through a proxy if the network is the problem:"
+            Write-Host  "        powershell -ExecutionPolicy Bypass -File scripts\get-binaries.ps1 -Proxy http://127.0.0.1:7890"
+        }
+        Write-Host  "      Or download a Windows build from https://ffmpeg.org/download.html and copy ffmpeg.exe into bin\"
     }
 }
 

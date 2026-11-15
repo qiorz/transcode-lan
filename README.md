@@ -57,6 +57,10 @@
 
 ## 三、快速开始
 
+**最省事：直接下载发行包。** [Releases](https://github.com/qiorz/transcode-lan/releases) 里的
+`transcode-lan-1.0.0-win-x64-full.zip` 已经包含 HandBrakeCLI 和 ffmpeg —— 解压后双击 `启动服务.bat` 就能用，
+不需要装 Git，也不需要编译。只有想改代码或自己构建时才需要看下面四步。
+
 ```powershell
 # 1. 克隆
 git clone https://github.com/qiorz/transcode-lan.git

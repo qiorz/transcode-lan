@@ -64,6 +64,11 @@ ships .NET Framework 4.8). One exe plus one web page turns an idle office PC int
 
 ## 3. Quick start
 
+**Easiest: grab a release.** The `transcode-lan-1.0.0-win-x64-full.zip` archive under
+[Releases](https://github.com/qiorz/transcode-lan/releases) already contains HandBrakeCLI and
+FFmpeg — unzip it and double-click `启动服务.bat`. No Git, no build step.
+The four steps below are only needed if you want to change or rebuild the code.
+
 ```powershell
 # 1. clone
 git clone https://github.com/qiorz/transcode-lan.git
