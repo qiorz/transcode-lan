@@ -421,21 +421,30 @@ Driven purely by interest, with no schedule:
 
 ---
 
-## 14. Third-party components and licensing
+## 14. Licensing and third-party components
 
-The project's own code is released under **MIT** (see [LICENSE](LICENSE)). The two
-third-party programs it drives are **not included** in this repository and must be
-downloaded separately:
+The project's own code is released under the **GNU GPL v3.0 (or later)**, see [LICENSE](LICENSE).
+
+> Why GPL instead of MIT: the `-full` release bundle ships HandBrake and FFmpeg together with
+> this code, and staying in the same license family makes the redistribution obligations
+> straightforward.
+
+The two third-party programs are **not committed to the repository**, but the `-full` release
+bundle contains them:
 
 | Component | License | Purpose |
 | --- | --- | --- |
-| [HandBrake](https://handbrake.fr/) / HandBrakeCLI | GPL-2.0 | The actual transcoding engine, invoked as a separate command-line program |
-| [FFmpeg](https://ffmpeg.org/) | LGPL-2.1+ / GPL-2.0+ (depends on the build) | Only used for the lossless ASS subtitle mux |
+| [HandBrake](https://handbrake.fr/) / HandBrakeCLI 1.11.2 | GPL-2.0 | The actual transcoding engine, invoked as a separate command-line program |
+| [FFmpeg](https://ffmpeg.org/) | GPL-3.0 (the official essentials build enables `--enable-gpl --enable-version3`) | Only used for the lossless ASS subtitle mux |
+
+Every release bundle carries:
+
+- `THIRD-PARTY-NOTICES.md` and `licenses\` (verbatim GPL-2.0 / GPL-3.0 texts) stating exact versions, sources and source-code locations;
+- unmodified official builds of both programs, invoked through the command line — aggregated with this project, not linked into it;
+- a pointer to this repository for this project's source; if you only want the program, clone and run `build.ps1`.
 
 `scripts/get-binaries.ps1` merely downloads them from their official releases and never
-commits them — this keeps the repository small and avoids the license obligations that
-come with redistributing third-party binaries. If you redistribute a packaged build
-yourself, comply with GPL/LGPL.
+commits them — the repository stays small and `git clone` stays fast.
 
 ---
 

@@ -380,16 +380,26 @@ transcode-lan\
 
 ---
 
-## 十四、第三方组件与许可
+## 十四、许可证与第三方组件
 
-本项目自身代码以 **MIT** 发布（见 [LICENSE](LICENSE)）。但它调用的两个第三方程序**不包含在本仓库中**，需要你自行下载：
+本项目自身代码以 **GNU GPL v3.0（或更新版本）** 发布，完整条款见 [LICENSE](LICENSE)。
+
+> 为什么是 GPL 而不是 MIT：`-full` 发行包会连 HandBrake 和 FFmpeg 一起分发，用同一族许可证能把再分发的义务一次讲清楚。
+
+它依赖的两个第三方程序**不包含在仓库里**，但会出现在 `-full` 发行包中：
 
 | 组件 | 许可 | 说明 |
 | --- | --- | --- |
-| [HandBrake](https://handbrake.fr/) / HandBrakeCLI | GPL-2.0 | 实际转码引擎，通过命令行调用，属于独立程序 |
-| [FFmpeg](https://ffmpeg.org/) | LGPL-2.1+ / GPL-2.0+（取决于构建） | 仅用于 ASS 字幕无损封装 |
+| [HandBrake](https://handbrake.fr/) / HandBrakeCLI 1.11.2 | GPL-2.0 | 实际转码引擎，通过命令行调用，属于独立程序 |
+| [FFmpeg](https://ffmpeg.org/) | GPL-3.0（官方 essentials 构建启用了 `--enable-gpl --enable-version3`） | 仅用于 ASS 字幕无损封装 |
 
-`scripts/get-binaries.ps1` 只是从官方发布页下载，不会把它们提交进本仓库 —— 这样既保持了仓库轻量，也避免再分发第三方二进制时的许可证义务。你自己分发打包版时，请遵守 GPL/LGPL 的要求。
+关于再分发，发行包里都做了对应说明：
+
+- 附带 `THIRD-PARTY-NOTICES.md` 和 `licenses\`（GPL-2.0 / GPL-3.0 原文），写清版本、来源和对应源码地址；
+- 两个程序都是**官方构建、未做任何修改**，只通过命令行调用，与本项目是“聚合”关系而不是链接；
+- 本项目源码始终可在本仓库获取；只想要程序本体的话，克隆后跑 `build.ps1` 即可。
+
+`scripts/get-binaries.ps1` 只从官方发布页下载，不会把二进制提交进 git —— 仓库因此保持轻量，`git clone` 仍是秒级。
 
 ---
 
