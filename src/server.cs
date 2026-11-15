@@ -184,6 +184,7 @@ namespace TranscodeServer
         public double quality;
         public string resolution = "source";
         public string fpsMode = "source";
+        public string cropMode = "none";
         public string audio = "copy:aac";
         public int audioBitrate = 128;
         public string custom = "";
@@ -439,7 +440,7 @@ namespace TranscodeServer
                             if (ext != ".mp4" && ext != ".mkv" && ext != ".avi" && ext != ".mov" && ext != ".ts" && ext != ".m2ts" && ext != ".wmv" && ext != ".flv" && ext != ".webm") continue;
                             bool known = false;
                             lock (gate) { foreach (Job j in jobs) if (string.Equals(j.source, f, StringComparison.OrdinalIgnoreCase)) { known = true; break; } }
-                            if (!known) Create(f, Program.Cfg.autoProfile, 0, "source", "source", "copy:aac", 128, "", Program.Cfg.autoSubtitle, "auto", "", true);
+                            if (!known) Create(f, Program.Cfg.autoProfile, 0, "source", "source", "none", "copy:aac", 128, "", Program.Cfg.autoSubtitle, "auto", "", true);
                         }
                     }
                     catch { }
@@ -485,7 +486,7 @@ namespace TranscodeServer
             }
         }
 
-        public Job Create(string source, string profile, double quality, string resolution, string fpsMode, string audio, int audioBitrate, string custom,
+        public Job Create(string source, string profile, double quality, string resolution, string fpsMode, string cropMode, string audio, int audioBitrate, string custom,
                           string subMode, string subTrack, string subFile, bool enqueue)
         {
             Job j = new Job();
@@ -496,6 +497,7 @@ namespace TranscodeServer
             j.quality = quality;
             j.resolution = string.IsNullOrEmpty(resolution) ? "source" : resolution;
             j.fpsMode = string.IsNullOrEmpty(fpsMode) ? "source" : fpsMode;
+            j.cropMode = string.IsNullOrEmpty(cropMode) ? "none" : cropMode;
             j.audio = string.IsNullOrEmpty(audio) ? "copy:aac" : audio;
             j.audioBitrate = audioBitrate > 0 ? audioBitrate : 128;
             j.custom = custom == null ? "" : custom;
@@ -632,6 +634,7 @@ namespace TranscodeServer
                 else if (j.resolution == "480p") { w = 854; h = 480; }
                 if (w > 0) sb.Append("-X ").Append(w).Append(" -Y ").Append(h).Append(" ");
             }
+            if (j.cropMode != "auto") sb.Append("--crop 0:0:0:0 ");
             if (j.fpsMode != "source")
             {
                 string fps = j.fpsMode == "30" ? "30" : (j.fpsMode == "25" ? "25" : "24");
@@ -1155,6 +1158,7 @@ namespace TranscodeServer
                         d["error"] = j.error; d["createdAt"] = j.createdAt; d["startedAt"] = j.startedAt;
                         d["finishedAt"] = j.finishedAt; d["elapsed"] = j.elapsed; d["args"] = j.args;
                         d["quality"] = j.quality; d["resolution"] = j.resolution; d["fpsMode"] = j.fpsMode;
+                        d["cropMode"] = j.cropMode;
                         d["audio"] = j.audio; d["audioBitrate"] = j.audioBitrate; d["custom"] = j.custom;
                         d["subtitleMode"] = j.subtitleMode; d["subtitleTrack"] = j.subtitleTrack; d["subtitleFile"] = j.subtitleFile;
                         d["subUsed"] = j.subUsed; d["subNote"] = j.subNote;
@@ -1191,6 +1195,7 @@ namespace TranscodeServer
                     j.error = Util.Str(d, "error"); j.createdAt = Util.Str(d, "createdAt"); j.startedAt = Util.Str(d, "startedAt");
                     j.finishedAt = Util.Str(d, "finishedAt"); j.elapsed = Util.Num(d, "elapsed"); j.args = Util.Str(d, "args");
                     j.quality = Util.Num(d, "quality"); j.resolution = Util.Str(d, "resolution"); j.fpsMode = Util.Str(d, "fpsMode");
+                    j.cropMode = Util.Str(d, "cropMode");
                     j.audio = Util.Str(d, "audio"); j.audioBitrate = (int)Util.Num(d, "audioBitrate"); j.custom = Util.Str(d, "custom");
                     j.subtitleMode = Util.Str(d, "subtitleMode"); j.subtitleTrack = Util.Str(d, "subtitleTrack"); j.subtitleFile = Util.Str(d, "subtitleFile");
                     j.subUsed = Util.Str(d, "subUsed"); j.subNote = Util.Str(d, "subNote");
@@ -1526,6 +1531,7 @@ namespace TranscodeServer
             d["quality"] = j.quality;
             d["resolution"] = j.resolution;
             d["fpsMode"] = j.fpsMode;
+            d["cropMode"] = j.cropMode;
             d["hasOutput"] = j.status == "done" && !string.IsNullOrEmpty(j.output) && File.Exists(j.output);
             d["sourceExists"] = !string.IsNullOrEmpty(j.source) && File.Exists(j.source);
             d["args"] = j.args;
@@ -1562,6 +1568,7 @@ namespace TranscodeServer
             double quality = d.ContainsKey("quality") ? Util.Num(d, "quality") : 0;
             string res = Util.Str(d, "resolution");
             string fps = Util.Str(d, "fps");
+            string crop = Util.Str(d, "cropMode");
             string audio = Util.Str(d, "audio");
             int ab = d.ContainsKey("audioBitrate") ? (int)Util.Num(d, "audioBitrate") : 128;
             string custom = Util.Str(d, "custom");
@@ -1569,7 +1576,7 @@ namespace TranscodeServer
             string subTrack = Util.Str(d, "subtitleTrack");
             string subFile = Util.Str(d, "subtitleFile");
 
-            Job j = Program.Jobs.Create(source, profile, quality, res, fps, audio, ab, custom, subMode, subTrack, subFile, true);
+            Job j = Program.Jobs.Create(source, profile, quality, res, fps, crop, audio, ab, custom, subMode, subTrack, subFile, true);
             Util.SendJson(ns, 200, Dto(j));
         }
 

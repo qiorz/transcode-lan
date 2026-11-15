@@ -332,6 +332,13 @@ dialog::backdrop{background:rgba(0,0,0,.65);backdrop-filter:blur(3px)}
       </select>
     </div>
     <div class="field">
+      <label>画面裁剪</label>
+      <select id="crop" title="自动裁黑边会让 HandBrake 按检测到的黑边改变输出分辨率">
+        <option value="none">保持原画面</option>
+        <option value="auto">自动裁黑边</option>
+      </select>
+    </div>
+    <div class="field">
       <label>音频</label>
       <select id="audio">
         <option value="copy">自动（能复制就复制，否则转 AAC）</option>
@@ -425,6 +432,7 @@ const STATE = {
   quality: parseFloat(localStorage.getItem("ts.quality") || "0"),
   resolution: localStorage.getItem("ts.resolution") || "source",
   fps: localStorage.getItem("ts.fps") || "source",
+  crop: localStorage.getItem("ts.crop") || "none",
   audio: localStorage.getItem("ts.audio") || "copy",
   subtitle: localStorage.getItem("ts.subtitle") || "none",
   subTrack: localStorage.getItem("ts.subTrack") || "auto",
@@ -720,6 +728,7 @@ async function createJob(name, source, subtitleFile, subModeOverride) {
     quality: p.copy ? 0 : parseFloat($("quality").value),
     resolution: $("resolution").value,
     fps: $("fps").value,
+    cropMode: $("crop").value,
     audio: $("audio").value,
     custom: $("custom").value.trim(),
     subtitleMode: subModeOverride || $("subtitle").value,
@@ -1066,6 +1075,8 @@ function init() {
   $("resolution").onchange = (e) => { STATE.resolution = e.target.value; localStorage.setItem("ts.resolution", e.target.value); };
   $("fps").value = STATE.fps;
   $("fps").onchange = (e) => { STATE.fps = e.target.value; localStorage.setItem("ts.fps", e.target.value); };
+  $("crop").value = STATE.crop;
+  $("crop").onchange = (e) => { STATE.crop = e.target.value; localStorage.setItem("ts.crop", e.target.value); };
   $("audio").value = STATE.audio;
   $("audio").onchange = (e) => { STATE.audio = e.target.value; localStorage.setItem("ts.audio", e.target.value); };
   $("subtitle").value = STATE.subtitle;

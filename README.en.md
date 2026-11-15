@@ -28,7 +28,7 @@ ships .NET Framework 4.8). One exe plus one web page turns an idle office PC int
 
 - **Upload and queue in the browser**: drag & drop or multi-select. Files first land in a *staged* area, so you can confirm settings before pressing **Start**. Progress, speed (× realtime), ETA, logs and cancel are all in the page.
 - **Five encoding presets**: AMD VCE H.264/H.265, x264/x265 software presets, and an x264 ultra-fast preset.
-- **Quality / resolution / frame rate / audio** are adjustable: CQ/CRF 18–34, 1080p/720p/480p, 30/25/24 fps, and "copy the audio stream, fall back to AAC".
+- **Quality / resolution / frame rate / cropping / audio** are adjustable: CQ/CRF 18–34, 1080p/720p/480p, 30/25/24 fps, cropping can keep the source picture or auto-crop black bars, and audio is "copy the stream, fall back to AAC".
 - **Custom arguments passed through verbatim**: whatever you type in the advanced box is appended to the `HandBrakeCLI` command line (e.g. `-b 2000`, `--decomb`, `--crop 0:0:0:0`).
 - **Subtitle handling**:
   - none / **burn-in** / **soft subtitles** (mov_text, can be toggled in the player);
@@ -113,7 +113,7 @@ On the same machine, just open <http://127.0.0.1:8099>.
 ## 4. Workflow
 
 1. **Upload**: drop videos onto the dashed box (or click *Choose files*, multi-select allowed). Uploaded files stay in the **staged** area and do **not** start yet.
-2. **Adjust**: drop a subtitle file at this point (it is paired with the matching video), and pick the preset, quality and subtitle mode on the left.
+2. **Adjust**: drop a subtitle file at this point (it is paired with the matching video), and pick the preset, quality, cropping and subtitle mode on the left.
 3. **Start**: press **Start** when it looks right, or *Start all*.
 4. **Wait**: each card shows percentage, speed and ETA. Only one job runs at a time by default (`maxParallel`).
 5. **Collect**: press *Download* when done. *Delete* also removes the output file.
@@ -151,7 +151,18 @@ integrated GPU, 1080p60 10-second source):
 
 - `-b 2000`: fixed 2 Mbps bitrate (disables the quality setting automatically)
 - `--decomb`: deinterlace (old DVDs, TV recordings)
-- `--crop 0:0:0:0`: do not auto-crop black bars
+- `--crop 8:8:8:8`: manual crop (top:bottom:left:right pixels)
+
+### Cropping
+
+The *Cropping* dropdown has two options:
+
+- **Keep the source picture** (default): the output resolution matches the source exactly. The server passes `--crop 0:0:0:0` explicitly, so HandBrake never crops black bars on its own.
+- **Auto-crop black bars**: HandBrake detects and removes the bars. For example, 4:3 content inside a 4K frame becomes 2880×2160 — fewer bits for the same quality, but the **output resolution changes**.
+
+> Keep the default for mixed footage (16:9 and 4:3 in one file); otherwise the whole file is cropped with a single aspect ratio and the other parts may lose picture.
+>
+> ⚠️ Both the dropdown and the custom arguments can emit `--crop`. When both are present, which one wins depends on HandBrake's argument parsing — use only one of them.
 
 ### Why only AMD hardware encoding is built in
 
@@ -280,6 +291,7 @@ $body = @{
   profile       = "h264-vce"
   quality       = 28
   resolution    = "1080p"
+  cropMode      = "none"   # none = keep the source picture, auto = crop black bars
   subtitleMode  = "burn"
   subtitleTrack = "auto"
 } | ConvertTo-Json
